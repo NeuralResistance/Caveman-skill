@@ -1,0 +1,23 @@
+Prompt 1 — Profile both repos before touching anything
+
+“Do not build any parsers yet. First profile both kb-cdp-tenant-protect-downstream and kb-cdp-tenant-landing. For each repo report: what file types exist and how many of each, what the top-level folder structure looks like, what the files appear to define based on names and a brief content scan, and whether any entity types or relationship types appear that are not already in @src/lineage/data_lineage_schema.md. Output findings to output/repo_profile_protect_downstream.md and output/repo_profile_landing.md. Confirmed facts only — label anything uncertain as INFERRED. Do not proceed to parser creation until both profiles are written.”
+
+Prompt 2 — Identify new node and edge types needed
+
+“Read output/repo_profile_protect_downstream.md, output/repo_profile_landing.md, and @src/lineage/data_lineage_schema.md. For each new repo identify: which existing entity types from the schema cover what you found, which concepts in these repos have no matching entity type yet and would need new ones, and which existing edge types can express the relationships or whether new edge types are needed. Output a gap analysis to output/schema_extension_candidates.md with two sections — one per repo — listing proposed new entity types and edge types with a one-line justification for each. Do not update the schema yet — this is a proposal only.”
+
+Prompt 3 — Build the protect-downstream parser
+
+“Read @src/lineage/data_lineage_schema.md, @src/lineage/data_lineage_schema.md, and the existing parsers in src/lineage/parsers/ to understand the established pattern. Build parsers/protect_downstream_parser.py for the kb-cdp-tenant-protect-downstream repo. Follow the exact same parser structure as the existing parsers: a parse() function that takes a repo path and returns a list of node dicts and edge dicts matching the authoritative schema. Use only entity types and edge types that exist in the schema or that were approved in output/schema_extension_candidates.md. Mark every inferred relationship with confidence=inferred and a reason. Output a sample run against the real repo to output/protect_downstream_raw.json. Do not generate HTML — JSON payload only.”
+
+Prompt 4 — Build the landing parser
+
+“Following the same pattern as Prompt 3, build parsers/landing_parser.py for the kb-cdp-tenant-landing repo. Parse landing zone configs, ingestion schemas, and any Snowflake table definitions found in the repo. Pay particular attention to any nodes that bridge between the HVR layer and the RAW Snowflake layer — this is the gap identified in the account lineage graph where the direct HVR route to LOADACCOUNTS_INGEST has no confirmed connection to the RAW relation. If landing configs evidence that connection, capture it as a new edge with confidence=confirmed and cite the source file. Output to output/landing_raw.json.”
+
+Prompt 5 — Validate both parser outputs against the schema
+
+“Read output/protect_downstream_raw.json and output/landing_raw.json against @src/lineage/data_lineage_schema.md. For each file check: every node has all required properties (key, entity_type, platform, layer, github_file), every edge has all required properties (source_key, target_key, edge_type, confidence, definition), no entity_type or edge_type exists that is not in the authoritative schema, and no edge has a source_key or target_key that does not match a node key in the same payload. Report a pass or fail per check. Fix any failures before proceeding. Output a clean validated version of each file: output/protect_downstream_payload.json and output/landing_payload.json.”
+
+Prompt 6 — Explore with the HTML report skill
+
+“Read @skills/html_graph_render_skill.md. Using the existing HTML report generation approach, create output/protect_downstream_explorer.html from output/protect_downstream_payload.json and output/landing_explorer.html from output/landing_payload.json. Each HTML file should show the nodes and edges from that repo’s payload only — do not merge with the existing account lineage graph yet. The goal is to explore what each repo contains visually before deciding how to integrate it into the main graph. Follow all rendering rules in the skill file for node colours, edge styles, confidence display, and the inspector panel.”
